@@ -100,7 +100,7 @@ def main(args):
                         {'params': model.audio_key_conv1x1.parameters(), 'lr': args.lr},
                         {'params': model.rnn.parameters(), 'lr': args.lr},
                         {'params': net_classifier.parameters(), 'lr': args.lr * 0.1},
-                        {'params': net_imageAudio.parameters(), 'lr': 0}] 
+                        {'params': net_imageAudio.parameters(), 'lr': 0},] 
         optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=1)
     else:
         optimizer = torch.optim.SGD(model.parameters(), args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=1)
@@ -154,5 +154,5 @@ def main(args):
             writer.add_scalars('training_curves/loss', {'train': train_loss, 'val':test_loss}, epoch)
     
 if __name__ == '__main__':
-    args = get_parameters("Listen to Look")
+    args = get_parameters("Prune Model")
     main(args)

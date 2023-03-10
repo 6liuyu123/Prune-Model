@@ -225,6 +225,17 @@ def get_parameters(description="Generic parser for deep learning"):
         action='store_true',
         help='Whether compute and log mAP'
     )
+    parser.add_argument(
+        "--sparsity",
+        default=False,
+        type=float,
+        help='sparsity of prune model'
+    )
+    parser.add_argument(
+        "--modeltype",
+        default=False,
+        help='model to prune'
+    )
 
     return parser.parse_args()
 

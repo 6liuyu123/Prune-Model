@@ -1,6 +1,7 @@
 from models.models import ModelBuilder
 from nni.algorithms.compression.v2.pytorch.pruning import L1NormPruner, LevelPruner
 from nni.compression.pytorch import ModelSpeedup
+from opts import get_parameters
 from torch import nn
 from torchsummary import summary
 
@@ -12,17 +13,20 @@ import torchvision
 
 device = torch.device("cpu")
 
+'''
+    TODO
+    1. image model prune
+    2. bc prune, use
+    3. load dataset(liuyu)
+    4. test accuracy of each prune(liuyu)
+'''
+
 # TODO
 # dataset = torchvision.datasets.Kinetics(
 #     root = "/mnt/g/k/k400",
 #     frames_per_clip = 16,    # TODO
 #     step_between_clips = 16    # TODO
 # )
-
-config_list = [{
-    'sparsity': 0.9,
-    'op_types': ['Conv2d']
-}]
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -62,8 +66,8 @@ class AudioNet(nn.Module):
         x = x.permute(0,3,1,2)
         x = self.freq_conv1x1(x)
         x = x.permute(0,2,1,3)
-        # x = F.adaptive_max_pool2d(x, (1,1))
-        # x = x.view(x.size(0), -1)
+        # x = F.adaptive_max_pool2d(x, (1,1))    # TODO
+        # x = x.view(x.size(0), -1)    # TODO
         return x
 
 def build_audio():
@@ -72,14 +76,27 @@ def build_audio():
     net = AudioNet(original_resnet)
     return net
 
+def build_image():
+    pretrained = True
+    original_resnet = torchvision.models.resnet18(pretrained)
+    net = VisualNet(original_resnet)
+    return net
+
 if __name__ == '__main__':
+    args = get_parameters("Prune-Model")
     model = build_audio()
+    if args.modeltype == 'image':
+        model = build_image()    # TODO
     summary(model, (1, 48, 48), device="cpu")
+    config_list = [{
+        'sparsity': args.sparsity,
+        'op_types': ['Conv2d']
+    }]
     start = time.time()
     pruner = L1NormPruner(model, config_list)
     _, masks = pruner.compress()
     pruner._unwrap_model()
     ModelSpeedup(model, dummy_input = torch.ones((1, 1, 48, 48)), masks_file = masks).speedup_model()
-    torch.save(model.state_dict(), './models/audio_model_0.9.pth')    # TODO
+    torch.save(model.state_dict(), './pruned/%s_model_%s.pth' % (args.modeltype, args.sparsity))
     end = time.time()
     print('Running time: %s Seconds' % (end - start))
